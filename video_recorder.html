@@ -1,0 +1,555 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Video Recorder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .content {
+            padding: 30px;
+        }
+
+        .video-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        #videoPreview {
+            width: 100%;
+            max-width: 640px;
+            height: 360px;
+            background: #f0f0f0;
+            border-radius: 10px;
+            margin: 20px 0;
+            border: 3px solid #ddd;
+        }
+
+        .controls {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin: 20px 0;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn-primary {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-danger {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+        }
+
+        .btn-success {
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            color: white;
+        }
+
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(78, 205, 196, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #95a5a6, #7f8c8d);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(149, 165, 166, 0.4);
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            text-align: center;
+            font-weight: 600;
+        }
+
+        .status.recording {
+            background: #ffe6e6;
+            color: #d63031;
+            border: 2px solid #ff7675;
+        }
+
+        .status.ready {
+            background: #e6ffe6;
+            color: #00b894;
+            border: 2px solid #55a3ff;
+        }
+
+        .status.stopped {
+            background: #fff3cd;
+            color: #856404;
+            border: 2px solid #ffeaa7;
+        }
+
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .info-box h3 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .info-box ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        .info-box li {
+            padding: 5px 0;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .info-box li:before {
+            content: "✓";
+            color: #00b894;
+            font-weight: bold;
+            position: absolute;
+            left: 0;
+        }
+
+        .download-section {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        .upload-section {
+            text-align: center;
+            margin: 30px 0;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+        }
+
+        #fileInput {
+            display: none;
+        }
+
+        .file-upload-label {
+            display: inline-block;
+            padding: 12px 24px;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border-radius: 25px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .file-upload-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .timer {
+            font-size: 1.5em;
+            font-weight: bold;
+            color: #667eea;
+            margin: 10px 0;
+        }
+
+        .recording-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            background: #ff6b6b;
+            border-radius: 50%;
+            margin-right: 10px;
+            animation: blink 1s infinite;
+        }
+
+        @keyframes blink {
+            0%, 50% { opacity: 1; }
+            51%, 100% { opacity: 0; }
+        }
+
+        .back-link {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .back-link a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .back-link a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .controls {
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            .btn {
+                width: 100%;
+                max-width: 300px;
+            }
+            
+            #videoPreview {
+                height: 240px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎥 Interactive Video Recorder</h1>
+            <p>Record, preview, download, and upload videos with ease</p>
+        </div>
+
+        <div class="content">
+            <!-- Status Display -->
+            <div id="status" class="status ready">
+                <span id="statusText">Ready to record</span>
+                <div id="timer" class="timer" style="display: none;">
+                    <span class="recording-indicator"></span>
+                    <span id="timeDisplay">00:00</span>
+                </div>
+            </div>
+
+            <!-- Video Preview -->
+            <div class="video-section">
+                <video id="videoPreview" autoplay muted playsinline></video>
+            </div>
+
+            <!-- Recording Controls -->
+            <div class="controls">
+                <button id="startBtn" class="btn btn-primary" onclick="startRecording()">
+                    🎬 Start Recording
+                </button>
+                <button id="stopBtn" class="btn btn-danger" onclick="stopRecording()" disabled>
+                    🛑 Stop Recording
+                </button>
+                <button id="downloadBtn" class="btn btn-success" onclick="downloadVideo()" disabled>
+                    📥 Download Video
+                </button>
+                <button id="resetBtn" class="btn btn-secondary" onclick="resetRecorder()" disabled>
+                    🔄 Reset
+                </button>
+            </div>
+
+            <!-- Download Section -->
+            <div class="download-section">
+                <h3>📥 Download Options</h3>
+                <p>Your recorded video will be automatically saved to your Downloads folder</p>
+                <div id="downloadInfo" style="display: none;">
+                    <p><strong>File saved as:</strong> <span id="fileName">recording.webm</span></p>
+                    <p><strong>Duration:</strong> <span id="fileDuration">00:00</span></p>
+                    <p><strong>Size:</strong> <span id="fileSize">0 MB</span></p>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="upload-section">
+                <h3>📤 Upload to Streamlit App</h3>
+                <p>Upload your recorded video back to the Streamlit application</p>
+                <label for="fileInput" class="file-upload-label">
+                    📁 Choose Video File
+                </label>
+                <input type="file" id="fileInput" accept="video/*" onchange="handleFileUpload(event)">
+                <div id="uploadInfo" style="display: none; margin-top: 15px;">
+                    <p><strong>Selected file:</strong> <span id="selectedFileName"></span></p>
+                    <p><strong>Size:</strong> <span id="selectedFileSize"></span></p>
+                </div>
+            </div>
+
+            <!-- Information Box -->
+            <div class="info-box">
+                <h3>💡 How to Use</h3>
+                <ul>
+                    <li>Click "Start Recording" to begin video capture</li>
+                    <li>Allow camera and microphone permissions when prompted</li>
+                    <li>Click "Stop Recording" when finished</li>
+                    <li>Download the video to your device</li>
+                    <li>Upload the video back to the Streamlit app</li>
+                </ul>
+            </div>
+
+            <!-- Back Link -->
+            <div class="back-link">
+                <a href="javascript:history.back()">← Back to Streamlit App</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let mediaRecorder;
+        let recordedChunks = [];
+        let stream;
+        let startTime;
+        let timerInterval;
+        let recordedBlob;
+
+        // Initialize the recorder
+        async function initializeRecorder() {
+            try {
+                stream = await navigator.mediaDevices.getUserMedia({
+                    video: {
+                        width: { ideal: 1280 },
+                        height: { ideal: 720 }
+                    },
+                    audio: true
+                });
+                
+                const videoPreview = document.getElementById('videoPreview');
+                videoPreview.srcObject = stream;
+                
+                updateStatus('ready', 'Camera ready - Click Start Recording');
+            } catch (error) {
+                console.error('Error accessing media devices:', error);
+                updateStatus('error', 'Error accessing camera/microphone. Please check permissions.');
+            }
+        }
+
+        // Start recording
+        async function startRecording() {
+            if (!stream) {
+                await initializeRecorder();
+            }
+
+            try {
+                recordedChunks = [];
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'video/webm;codecs=vp9,opus'
+                });
+
+                mediaRecorder.ondataavailable = (event) => {
+                    if (event.data.size > 0) {
+                        recordedChunks.push(event.data);
+                    }
+                };
+
+                mediaRecorder.onstop = () => {
+                    recordedBlob = new Blob(recordedChunks, { type: 'video/webm' });
+                    updateDownloadInfo();
+                    enableButtons(['downloadBtn', 'resetBtn']);
+                    disableButtons(['stopBtn']);
+                    updateStatus('stopped', 'Recording completed - Ready to download');
+                    stopTimer();
+                };
+
+                mediaRecorder.start();
+                startTimer();
+                enableButtons(['stopBtn']);
+                disableButtons(['startBtn']);
+                updateStatus('recording', 'Recording in progress...');
+                
+            } catch (error) {
+                console.error('Error starting recording:', error);
+                updateStatus('error', 'Error starting recording. Please try again.');
+            }
+        }
+
+        // Stop recording
+        function stopRecording() {
+            if (mediaRecorder && mediaRecorder.state !== 'inactive') {
+                mediaRecorder.stop();
+            }
+        }
+
+        // Download video
+        function downloadVideo() {
+            if (recordedBlob) {
+                const url = URL.createObjectURL(recordedBlob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `video_recording_${new Date().toISOString().slice(0, 19).replace(/:/g, '-')}.webm`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                // Update file info
+                document.getElementById('fileName').textContent = a.download;
+                document.getElementById('downloadInfo').style.display = 'block';
+            }
+        }
+
+        // Reset recorder
+        function resetRecorder() {
+            recordedChunks = [];
+            recordedBlob = null;
+            enableButtons(['startBtn']);
+            disableButtons(['downloadBtn', 'resetBtn', 'stopBtn']);
+            updateStatus('ready', 'Ready to record');
+            document.getElementById('downloadInfo').style.display = 'none';
+            document.getElementById('uploadInfo').style.display = 'none';
+        }
+
+        // Handle file upload
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                document.getElementById('selectedFileName').textContent = file.name;
+                document.getElementById('selectedFileSize').textContent = formatFileSize(file.size);
+                document.getElementById('uploadInfo').style.display = 'block';
+                
+                // Show success message
+                updateStatus('ready', `File "${file.name}" selected - Ready to upload to Streamlit`);
+            }
+        }
+
+        // Timer functions
+        function startTimer() {
+            startTime = Date.now();
+            document.getElementById('timer').style.display = 'block';
+            timerInterval = setInterval(updateTimer, 1000);
+        }
+
+        function stopTimer() {
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+        }
+
+        function updateTimer() {
+            const elapsed = Date.now() - startTime;
+            const seconds = Math.floor(elapsed / 1000);
+            const minutes = Math.floor(seconds / 60);
+            const remainingSeconds = seconds % 60;
+            document.getElementById('timeDisplay').textContent = 
+                `${minutes.toString().padStart(2, '0')}:${remainingSeconds.toString().padStart(2, '0')}`;
+        }
+
+        // Update status
+        function updateStatus(type, message) {
+            const status = document.getElementById('status');
+            const statusText = document.getElementById('statusText');
+            
+            status.className = `status ${type}`;
+            statusText.textContent = message;
+        }
+
+        // Enable/disable buttons
+        function enableButtons(buttonIds) {
+            buttonIds.forEach(id => {
+                document.getElementById(id).disabled = false;
+            });
+        }
+
+        function disableButtons(buttonIds) {
+            buttonIds.forEach(id => {
+                document.getElementById(id).disabled = true;
+            });
+        }
+
+        // Update download info
+        function updateDownloadInfo() {
+            if (recordedBlob) {
+                const duration = Math.floor((Date.now() - startTime) / 1000);
+                const minutes = Math.floor(duration / 60);
+                const seconds = duration % 60;
+                
+                document.getElementById('fileDuration').textContent = 
+                    `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+                document.getElementById('fileSize').textContent = formatFileSize(recordedBlob.size);
+            }
+        }
+
+        // Format file size
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 Bytes';
+            const k = 1024;
+            const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            const i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        // Initialize when page loads
+        window.addEventListener('load', () => {
+            updateStatus('ready', 'Initializing camera...');
+            initializeRecorder();
+        });
+
+        // Cleanup when page unloads
+        window.addEventListener('beforeunload', () => {
+            if (stream) {
+                stream.getTracks().forEach(track => track.stop());
+            }
+            if (timerInterval) {
+                clearInterval(timerInterval);
+            }
+        });
+    </script>
+</body>
+</html> 
